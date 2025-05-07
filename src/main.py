@@ -7,8 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.responses import FileResponse
-from fastapi.responses import RedirectResponse
-
 
 app = FastAPI()
 
@@ -36,13 +34,6 @@ app.add_middleware(
 def favicon():
     return FileResponse(os.path.join(public_dir, "favicon.ico"))
 
-@app.middleware("http")
-async def redirect_http_to_https(request: Request, call_next):
-    if request.headers.get("x-forwarded-proto") == "http":
-        url = request.url.replace(scheme="https")
-        return RedirectResponse(url=str(url))
-    return await call_next(request)
-
 app.include_router(user.v1_router, prefix="/api")
 app.include_router(auth.v1_router, prefix="/api")
 app.include_router(policy.v1_router, prefix="/api")
@@ -50,4 +41,4 @@ app.include_router(policy.v1_router, prefix="/api")
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello Worldiee!"}
