@@ -9,12 +9,11 @@ import os
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-v1_router = APIRouter(
-    prefix="/v1",
+router = APIRouter(
     tags=['Authentication']
 )
 
-@v1_router.post("/login")
+@router.post("/login")
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)) -> schemas.Token:
     user = security.authenticate_user(form_data.username, form_data.password, db)
     if not user:
@@ -27,7 +26,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     access_token = security.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return schemas.Token(access_token=access_token, token_type="bearer")
 
-@v1_router.get("/users/me/", response_model=schemas.User)
+@router.get("/users/me/", response_model=schemas.User)
 async def read_users_me(current_user: Annotated[schemas.User, Depends(security.get_current_active_user)],):
     return current_user
 

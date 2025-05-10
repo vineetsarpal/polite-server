@@ -34,8 +34,8 @@ app.add_middleware(
 def favicon():
     return FileResponse(os.path.join(public_dir, "favicon.ico"))
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(user.v1_router, prefix="/api")
-app.include_router(auth.v1_router, prefix="/api")
 app.include_router(policy.v1_router, prefix="/api")
 
 
