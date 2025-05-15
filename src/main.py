@@ -2,13 +2,15 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
-from .routers import user, auth, policy
+from .routers.v1 import user, auth, policy
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.responses import FileResponse
 
 app = FastAPI()
+
+API_BASE_PREFIX = "/api"
 
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
@@ -34,9 +36,9 @@ app.add_middleware(
 def favicon():
     return FileResponse(os.path.join(public_dir, "favicon.ico"))
 
-app.include_router(auth.router, prefix="/api")
-app.include_router(user.v1_router, prefix="/api")
-app.include_router(policy.v1_router, prefix="/api")
+app.include_router(auth.v1_router, prefix=API_BASE_PREFIX)
+app.include_router(user.v1_router, prefix=API_BASE_PREFIX)
+app.include_router(policy.v1_router, prefix=API_BASE_PREFIX)
 
 
 @app.get("/")

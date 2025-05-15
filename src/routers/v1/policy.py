@@ -1,8 +1,8 @@
 from fastapi import status, HTTPException, Depends, APIRouter, Response
 from typing import Annotated
-from .. import models, schemas, security
+from ... import models, schemas, security
 from sqlalchemy.orm import Session
-from .. database import get_db
+from ... database import get_db
 
 v1_router = APIRouter(
     prefix="/v1/policies",
