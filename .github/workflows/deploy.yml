@@ -22,4 +22,8 @@ jobs:
           script: |
             cd app
             git pull
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt --upgrade
+            deactivate
             echo ${{secrets.PROD_PASSWORD}} | sudo -S systemctl restart api
