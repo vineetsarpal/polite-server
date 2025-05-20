@@ -17,6 +17,21 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
 
+class Contact(Base):
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String) # individual/company
+    first_name = Column(String)
+    last_name = Column(String)
+    email = Column(String)
+    dob = Column(String) # For Individual = date of birth / for Company = date of inception
+    is_active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+    created_by = Column(String)
+    updated_by = Column(String)
+
 
 class Policy(Base):
     __tablename__ = "policies"
@@ -38,7 +53,7 @@ class Policy(Base):
     start_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=False)
 
-    policyholder_id = Column(Integer, ForeignKey("users.id"))
+    policyholder_id = Column(Integer, ForeignKey("contacts.id"))
     
 
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))

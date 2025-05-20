@@ -1,6 +1,6 @@
 from typing import Annotated
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from datetime import datetime
+from datetime import datetime, date
 
 #Token Schemas
 class Token(BaseModel):
@@ -39,7 +39,20 @@ class UserOut(BaseModel):
     email: EmailStr
     created_at: datetime
 
+# Contact Schemas
+class ContactBase(BaseModel):
+    type: str
+    first_name: str
+    last_name: str
+    email: EmailStr | None = None
+    dob: date | None = None
 
+class ContactCreate(ContactBase):
+    pass
+
+class ContactPublic(ContactBase):
+    id: int
+    is_active: bool | None = True
 
 # Policy Schemas
 class PolicyBase(BaseModel):

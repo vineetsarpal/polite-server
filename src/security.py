@@ -1,15 +1,77 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from . database import get_db
-from . import schemas, models, utils
+from . import schemas, models, utils, config
 from fastapi import Depends, status, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jwt.exceptions import InvalidTokenError
 from datetime import datetime, timedelta, timezone
+from fastapi_auth0 import Auth0
+from jose import jwt, JWTError
 import os
-import jwt
+import httpx
 
+# === Auth0 ===
+auth0 = Auth0(
+    domain=config.AUTH0_DOMAIN,
+    api_audience=config.AUTH0_AUDIENCE,
+    scopes={'read:messages': ''}
+)
+
+bearer_scheme = HTTPBearer()
+
+async def get_jwk():
+    async with httpx.AsyncClient() as client:
+        url = f"https://{config.AUTH0_DOMAIN}/.well-known/jwks.json"
+        res = await client.get(url)
+        res.raise_for_status()
+        return res.json()
+
+async def get_current_user_auth0(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
+    token = credentials.credentials
+    try:
+        jwks = await get_jwk()
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"],
+                }
+        if not rsa_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unable to find appropriate key",
+            )
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=config.AUTH0_ALGORITHM,
+            audience=config.AUTH0_AUDIENCE,
+            issuer=f"https://{config.AUTH0_DOMAIN}/",
+        )
+        # payload now contains all user claims, including 'sub'
+        return payload
+    
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        ) from e
+
+# === end ===
+
+# === Basic Auth ===
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
@@ -22,7 +84,6 @@ def authenticate_user(username: str, password: str, db: Session = Depends(get_db
     if not utils.verify_password(password, user.password):
         return False
     return user
-
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -53,12 +114,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
         raise credentials_exception
     return user
 
-
 async def get_current_active_user(current_user: Annotated[schemas.User, Depends(get_current_user)],):
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
-    
+# === end ===
 
 # # Older
 # def create_access_token(data: dict):

@@ -47,13 +47,13 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db), current_user = 
 
 # Update Policy with id
 @v1_router.put("/{policy_id}", response_model=schemas.PolicyPublic)
-def update_policy(policy_id: int, updated_post: schemas.PolicyCreate, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
+def update_policy(policy_id: int, updated_policy: schemas.PolicyCreate, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
     policy_query = db.query(models.Policy).filter(models.Policy.id == policy_id)
     policy = policy_query.first()
     if policy == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Policy with id: {policy_id} does not exist")
     if policy.policyholder_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform requested action")
-    policy_query.update(updated_post.model_dump(), synchronize_session=False)
+    policy_query.update(updated_policy.model_dump(), synchronize_session=False)
     db.commit()
     return policy_query.first()
