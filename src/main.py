@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Security
 from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
-from .routers.v1 import user, auth, policy, contact
+from .routers.v1 import user, auth, policy, contact, role, permission
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
@@ -38,14 +38,17 @@ app.add_middleware(
 def favicon():
     return FileResponse(os.path.join(public_dir, "favicon.ico"))
 
+# === Routers ===
 app.include_router(auth.v1_router, prefix=API_BASE_PREFIX)
 app.include_router(user.v1_router, prefix=API_BASE_PREFIX)
+app.include_router(role.v1_router, prefix=API_BASE_PREFIX)
+app.include_router(permission.v1_router, prefix=API_BASE_PREFIX)
 app.include_router(contact.v1_router, prefix=API_BASE_PREFIX)
 app.include_router(policy.v1_router, prefix=API_BASE_PREFIX)
 
 
 # Auth0 private endpoint test
-@app.get("/api/private", dependencies=[Depends(security.auth0.implicit_scheme)])
+@app.get("/api/private-auth0", dependencies=[Depends(security.auth0.implicit_scheme)])
 def private(user = Depends(security.get_current_user_auth0)):
     return {"user": user}
 

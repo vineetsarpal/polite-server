@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, List, Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime, date
 
-#Token Schemas
+# === Token Schemas ===
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -11,35 +11,69 @@ class TokenData(BaseModel):
     username: str | None = None
     role: str | None = None
 
-# User Schemas
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr | None = None
-    password: str
-    full_name: str | None = None
-    role: str | None = None
-
-
-class User(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+# === User Schemas ===
+class UserBase(BaseModel):
     username: str
     email: EmailStr | None = None
     full_name: str | None = None
-    role: str | None = None # "admin", "agent", "customer"
+
+class UserCreate(UserBase):
+    pass
+
+class UserPublic(UserBase):
+    id: int
     is_active: bool | None = True
+    created_at: datetime 
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 # class UserInDB(User):
 #     password: str
 
-class UserOut(BaseModel):
+
+# === Permission Schemas ===
+class PermissionBase(BaseModel):
+    name: str
+    description: str | None = None
+
+class PermissionCreate(PermissionBase):
+    pass
+
+
+class PermissionPublic(PermissionBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+class PermissionWithAssignment(PermissionBase):
+    id: int
+    assigned: bool
+
+
+# === Role Schemas ===
+class RoleBase(BaseModel):
+    name: str
+    description: str | None = None
+
+class RoleCreate(RoleBase):
+    pass
+
+class RolePublic(RoleBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    users: List[UserPublic] = []
+    permissions: List[PermissionPublic] = []
+
     model_config = ConfigDict(from_attributes=True)
 
+class RoleWithAssignment(RoleBase):
     id: int
-    email: EmailStr
-    created_at: datetime
+    assigned: bool
 
-# Contact Schemas
+
+# === Contact Schemas ===
 class ContactBase(BaseModel):
     type: str
     first_name: str
@@ -54,7 +88,8 @@ class ContactPublic(ContactBase):
     id: int
     is_active: bool | None = True
 
-# Policy Schemas
+
+# === Policy Schemas ===
 class PolicyBase(BaseModel):
     lob: str
     status: str | None = "active"
@@ -79,6 +114,6 @@ class PolicyCreate(PolicyBase):
     pass
 
 class PolicyPublic(PolicyBase):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
+
+    model_config = ConfigDict(from_attributes=True)

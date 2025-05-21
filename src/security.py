@@ -114,7 +114,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
         raise credentials_exception
     return user
 
-async def get_current_active_user(current_user: Annotated[schemas.User, Depends(get_current_user)],):
+async def get_current_active_user(current_user: Annotated[schemas.UserPublic, Depends(get_current_user)],):
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
