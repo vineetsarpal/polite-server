@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
-from . database import get_db
-from . import schemas, models, utils, config
-from fastapi import Depends, status, HTTPException
+from typing import Annotated, Optional, List
+from src.database import get_db
+from src import schemas, models, utils, config
+from fastapi import Depends, status, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jwt.exceptions import InvalidTokenError
@@ -28,8 +28,10 @@ async def get_jwk():
         res.raise_for_status()
         return res.json()
 
-async def get_current_user_auth0(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
+async def get_current_user_auth0(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)):
     token = credentials.credentials
+    if not credentials:
+        return None # No bearer token provided, so Auth0 can't authenticate.
     try:
         jwks = await get_jwk()
         unverified_header = jwt.get_unverified_header(token)
@@ -69,8 +71,6 @@ async def get_current_user_auth0(credentials: HTTPAuthorizationCredentials = Dep
             detail="Could not validate credentials",
         ) from e
 
-# === end ===
-
 # === Basic Auth ===
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -95,7 +95,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+async def get_current_user(token: Annotated[Optional[str], Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+    if not token:
+        return None # No token provided for Basic Auth
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -104,43 +106,32 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Se
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
+        
+        # Extract permissions
+        permissions: List[str] = payload.get("permissions", [])
+
         if username is None:
             raise credentials_exception
-        token_data = schemas.TokenData(username=username)
+        token_data = schemas.TokenData(username=username, permissions=permissions)
+
     except InvalidTokenError:
         raise credentials_exception
+    except Exception as e:
+        print(f"Basic Auth validation error: {e}") 
+        raise credentials_exception from e
     user = db.query(models.User).filter(models.User.username == token_data.username).first()
     if user is None:
         raise credentials_exception
+    
+    # Attach permissions to user object
+    user.permissions = permissions
+    
     return user
 
 async def get_current_active_user(current_user: Annotated[schemas.UserPublic, Depends(get_current_user)],):
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
-# === end ===
 
-# # Older
-# def create_access_token(data: dict):
-#     to_encode = data.copy()
-#     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-#     to_encode.update({"exp": expire})
-#     encoded_jwt  = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-#     return encoded_jwt
 
-# def verify_access_token(token: str, credentials_exception):
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         id = payload.get("user_id")
-#         if id is None:
-#             raise credentials_exception
-#         token_data = schemas.TokenData(id=str(id))
-#     except JWTError:
-#         raise credentials_exception
-#     return token_data
-
-# def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
-#     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
-#     token = verify_access_token(token, credentials_exception)
-#     user = db.query(models.User).filter(models.User.id == token.id).first()
-#     return user
+# === Future: Common func to try both auth0 and basic auth and return user ===

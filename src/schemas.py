@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Union
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import datetime, date
 
@@ -10,6 +10,17 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str | None = None
     role: str | None = None
+    permissions: List[str] = []
+
+# === Auth0 ===
+class Auth0Payload(BaseModel):
+    # This schema defines the expected structure of the Auth0 JWT payload you want to return
+    sub: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    permissions: Optional[List[str]] = None
+    # Add other common claims like 'aud', 'iss', 'exp', etc. if you want to use them
+    
 
 # === User Schemas ===
 class UserBase(BaseModel):
@@ -28,8 +39,8 @@ class UserPublic(UserBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# class UserInDB(User):
-#     password: str
+class CurrentUser(UserPublic):
+    permissions: List[str] = []
 
 
 # === Permission Schemas ===
@@ -70,7 +81,7 @@ class RolePublic(RoleBase):
 
 class RoleWithAssignment(RoleBase):
     id: int
-    assigned: bool
+    assigned: bool | None = None
 
 
 # === Contact Schemas ===

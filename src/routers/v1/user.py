@@ -1,7 +1,7 @@
 from fastapi import status, HTTPException, Depends, APIRouter
-from ... import models, schemas, utils, security
+from src import models, schemas, utils, security
 from sqlalchemy.orm import Session
-from ... database import get_db
+from src.database import get_db
 from typing import List
 
 v1_router = APIRouter(
@@ -73,11 +73,15 @@ def get_user_roles(user_id: int, db: Session = Depends(get_db)):
     
     # Fetch all roles and check if assigned to current user
     all_roles = db.query(models.Role).all()
-    assigned_role_ids = { role.id for role in all_roles }
-    return [ 
-        { "id": role.id, "name": role.name, "assigned": role.id in assigned_role_ids } 
-        for role in all_roles
-    ]
+    assigned_role_ids = { role.id for role in user.roles }
+
+    roles_with_assignment: List[schemas.RoleWithAssignment] = []
+
+    for role in all_roles:
+        is_assigned = role.id in assigned_role_ids
+        roles_with_assignment.append(schemas.RoleWithAssignment(id=role.id, name=role.name, assigned=is_assigned))
+    
+    return roles_with_assignment
 
 # Assign/Remove Roles for a User in batch
 @v1_router.post("/{user_id}/roles")

@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Table
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, DateTime, Table, Date
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.orm import relationship
-from .database import Base
+from src.database import Base
 from typing import Literal
 
 # Association table for many-to-many User <-> Role
@@ -34,9 +34,10 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
-    roles = relationship("Role", secondary=user_roles, back_populates="users")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+
+    roles = relationship("Role", secondary=user_roles, back_populates="users")
 
 class Role(Base):
     __tablename__ = "roles"
@@ -44,10 +45,11 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True)
     description = Column(String(100))
-    users = relationship("User", secondary=user_roles, back_populates="roles")
-    permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+
+    users = relationship("User", secondary=user_roles, back_populates="roles")
+    permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
 
 class Permission(Base):
     __tablename__ = "permissions"
@@ -55,9 +57,10 @@ class Permission(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True)  # e.g., "create:contact", "delete:user"
     description = Column(String(100))
-    roles = relationship("Role", secondary=role_permissions, back_populates="permissions")
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+
+    roles = relationship("Role", secondary=role_permissions, back_populates="permissions")
 
 
 class Contact(Base):
@@ -68,11 +71,10 @@ class Contact(Base):
     first_name = Column(String)
     last_name = Column(String)
     email = Column(String)
-    dob = Column(String) # For Individual = date of birth / for Company = date of inception
+    dob = Column(Date) # For Individual = date of birth / for Company = date of inception
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
-    created_by = Column(String)
     updated_by = Column(String)
 
 

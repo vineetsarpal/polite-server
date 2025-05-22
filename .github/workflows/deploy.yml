@@ -21,9 +21,14 @@ jobs:
           password: ${{secrets.PROD_PASSWORD}}
           script: |
             cd app
+
+            echo ${{secrets.PROD_PASSWORD}} | sudo -S apt update
+            echo ${{secrets.PROD_PASSWORD}} | sudo -S apt upgrade -y
+
             git pull
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt --upgrade
             deactivate
+            
             echo ${{secrets.PROD_PASSWORD}} | sudo -S systemctl restart api

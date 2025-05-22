@@ -1,8 +1,8 @@
 from fastapi import status, HTTPException, Depends, APIRouter, Response
 from typing import Annotated
-from ... import models, schemas, security
+from src import models, schemas, security
 from sqlalchemy.orm import Session
-from ... database import get_db
+from src.database import get_db
 from typing import List
 
 v1_router = APIRouter(
@@ -74,22 +74,23 @@ def update_role(role_id: int, updated_role: schemas.RoleCreate, db: Session = De
 
 # Get all Permissions for a Role
 @v1_router.get("/{role_id}/permissions", response_model=List[schemas.PermissionWithAssignment])
-def get_role_permissions(
-    role_id: int,
-    db: Session = Depends(get_db)
-):
+def get_role_permissions(role_id: int, db: Session = Depends(get_db)):
     role = db.query(models.Role).filter(models.Role.id == role_id).first()
     if not role:
-        raise HTTPException(status_code=404, detail="Role not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Role with id: {role_id} not found")
 
     # Fetch all permissions and check if assigned to role
     all_permissions = db.query(models.Permission).all()
-    assigned_permission_ids = {perm.id for perm in role.permissions}
+    assigned_permission_ids = {permission.id for permission in role.permissions}
 
-    return [
-        { "id": perm.id, "name": perm.name, "assigned": perm.id in assigned_permission_ids }
-        for perm in all_permissions
-    ]
+    permissions_with_assignment: List[schemas.PermissionWithAssignment] = []
+
+    for permission in all_permissions:
+        is_assigned = permission.id in assigned_permission_ids
+        permissions_with_assignment.append(schemas.PermissionWithAssignment(id=permission.id, name=permission.name, assigned=is_assigned))
+    
+    return permissions_with_assignment
+
 
 # Batch assign/remove permissions for a role
 @v1_router.post("/{role_id}/permissions")

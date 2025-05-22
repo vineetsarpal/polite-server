@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Annotated
-from ... import schemas, models, security
-from ... database import get_db
+from src import schemas, models, security
+from src.database import get_db
 from datetime import timedelta
 import os
 
@@ -11,7 +11,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 v1_router = APIRouter(
     prefix='/v1/auth',
-    tags=['Authentication']
+    tags=['Auth']
 )
 
 @v1_router.post("/login")
@@ -23,8 +23,20 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Get all unique permissions associated with the user's roles
+    permissions = set()
+    for role in user.roles:
+        for permission in role.permissions:
+            permissions.add(permission.name)
+    user_permissions = list(permissions)
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    tokenData = {
+        "sub": user.username,
+        "permissions": user_permissions,
+    }
+    access_token = security.create_access_token(data=tokenData, expires_delta=access_token_expires)
     return schemas.Token(access_token=access_token, token_type="bearer")
 
 @v1_router.get("/users/me/", response_model=schemas.UserPublic)
