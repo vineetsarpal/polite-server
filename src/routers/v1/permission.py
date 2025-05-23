@@ -17,7 +17,7 @@ async def get_permissions(skip: int = 0, limit: int = 10, db: Session = Depends(
 
 # Create a Permission
 @v1_router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PermissionPublic)
-async def create_permission(token: Annotated[str, Depends(security.oauth2_scheme)], permission: schemas.PermissionCreate, db: Session = Depends(get_db)):
+async def create_permission(permission: schemas.PermissionCreate, db: Session = Depends(get_db)):
     new_permission = models.Permission(**permission.model_dump())
     db.add(new_permission)
     db.commit()

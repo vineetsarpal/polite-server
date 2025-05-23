@@ -55,4 +55,4 @@ app.include_router(policy.v1_router, prefix=API_BASE_PREFIX)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World 2!"}
+    return {"message": "Hello World!"}

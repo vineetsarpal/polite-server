@@ -18,7 +18,12 @@ async def get_roles(skip: int = 0, limit: int = 10, db: Session = Depends(get_db
 
 # Create a Role
 @v1_router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.RolePublic)
-async def create_role(token: Annotated[str, Depends(security.oauth2_scheme)], role: schemas.RoleCreate, db: Session = Depends(get_db)):
+async def create_role(role: schemas.RoleCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "create:roles" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+        
     new_role = models.Role(**role.model_dump())
     db.add(new_role)
     db.commit()
@@ -35,7 +40,12 @@ async def get_role(role_id: int, db: Session = Depends(get_db)):
 
 # Delete Role with id
 @v1_router.delete("/{role_id}")
-def delete_role(role_id: int, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
+def delete_role(role_id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "delete:roles" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+    
     role_query = db.query(models.Role).filter(models.Role.id == role_id)
     role = role_query.first()
     if role == None:
@@ -46,7 +56,12 @@ def delete_role(role_id: int, db: Session = Depends(get_db), current_user = Depe
 
 # Update Role with id
 @v1_router.put("/{role_id}", response_model=schemas.RolePublic)
-def update_role(role_id: int, updated_role: schemas.RoleCreate, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
+def update_role(role_id: int, updated_role: schemas.RoleCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "update:roles" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+    
     role_query = db.query(models.Role).filter(models.Role.id == role_id)
     role = role_query.first()
     if role == None:

@@ -35,11 +35,11 @@ async def get_contacts(skip: int = 0, limit: int = 10, db: Session = Depends(get
 #     return new_contact
 
 # Basic Auth
-@v1_router.post("/", status_code=status.HTTP_201_CREATED, )
-                #response_model=schemas.ContactPublic)
-async def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_user)):
-    permissions = current_user.permissions
-    if "create:contacts" not in permissions:
+@v1_router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.ContactPublic)
+async def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "create:contacts" not in user_permissions:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
     new_contact = models.Contact(**contact.model_dump(), updated_by=current_user.id)
     db.add(new_contact)
@@ -94,7 +94,7 @@ async def get_contact(contact_id: int, db: Session = Depends(get_db)):
 #     return contact_query.first()
 
 @v1_router.put("/{contact_id}", response_model=schemas.ContactPublic)
-def update_contact(contact_id: int, updated_contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_user)):
+def update_contact(contact_id: int, updated_contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
     # Check permissions
     permissions = current_user.permissions
     if "update:contacts" not in permissions:

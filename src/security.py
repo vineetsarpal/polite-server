@@ -119,6 +119,7 @@ async def get_current_user(token: Annotated[Optional[str], Depends(oauth2_scheme
     except Exception as e:
         print(f"Basic Auth validation error: {e}") 
         raise credentials_exception from e
+    
     user = db.query(models.User).filter(models.User.username == token_data.username).first()
     if user is None:
         raise credentials_exception
@@ -128,10 +129,18 @@ async def get_current_user(token: Annotated[Optional[str], Depends(oauth2_scheme
     
     return user
 
-async def get_current_active_user(current_user: Annotated[schemas.UserPublic, Depends(get_current_user)],):
+async def get_current_active_user(current_user: schemas.UserPublic = Depends(get_current_user)):
+    if current_user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
     return current_user
 
+
+# === Check Permission ===
+async def check_permission(permission_to_check: str, user_permissions: List[str]):
+    if permission_to_check not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+    return True
 
 # === Future: Common func to try both auth0 and basic auth and return user ===

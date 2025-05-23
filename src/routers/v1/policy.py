@@ -17,7 +17,12 @@ async def get_policies(skip: int = 0, limit: int = 10, db: Session = Depends(get
 
 # Create a Policy
 @v1_router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PolicyPublic)
-async def create_policy(token: Annotated[str, Depends(security.oauth2_scheme)], policy: schemas.PolicyCreate, db: Session = Depends(get_db)):
+async def create_policy(policy: schemas.PolicyCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "create:policies" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+    
     new_policy = models.Policy(**policy.model_dump())
     db.add(new_policy)
     db.commit()
@@ -34,7 +39,12 @@ async def get_policy(policy_id: int, db: Session = Depends(get_db)):
 
 # Delete Policy with id
 @v1_router.delete("/{policy_id}")
-def delete_policy(policy_id: int, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
+def delete_policy(policy_id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "delete:policies" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+        
     policy_query = db.query(models.Policy).filter(models.Policy.id == policy_id)
     policy = policy_query.first()
     if policy == None:
@@ -47,7 +57,12 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db), current_user = 
 
 # Update Policy with id
 @v1_router.put("/{policy_id}", response_model=schemas.PolicyPublic)
-def update_policy(policy_id: int, updated_policy: schemas.PolicyCreate, db: Session = Depends(get_db), current_user = Depends(security.get_current_user)):
+def update_policy(policy_id: int, updated_policy: schemas.PolicyCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    # Check permissions
+    user_permissions = current_user.permissions
+    if "update:policies" not in user_permissions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
+    
     policy_query = db.query(models.Policy).filter(models.Policy.id == policy_id)
     policy = policy_query.first()
     if policy == None:
