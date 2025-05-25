@@ -23,7 +23,7 @@ async def create_role(role: schemas.RoleCreate, db: Session = Depends(get_db), c
     user_permissions = current_user.permissions
     if "create:roles" not in user_permissions:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to perform this action!")
-        
+    
     new_role = models.Role(**role.model_dump())
     db.add(new_role)
     db.commit()

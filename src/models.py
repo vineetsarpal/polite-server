@@ -25,6 +25,14 @@ role_permissions = Table(
     Column("updated_at", TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
 )
 
+class Organization(Base):
+    __tablename__ = "organizations"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+
+    users = relationship("User", back_populates="organization")
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -36,7 +44,9 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
 
+    organization = relationship("Organization", back_populates="users")
     roles = relationship("Role", secondary=user_roles, back_populates="users")
 
 class Role(Base):

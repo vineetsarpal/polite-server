@@ -71,6 +71,7 @@ async def get_current_user_auth0(credentials: Optional[HTTPAuthorizationCredenti
             detail="Could not validate credentials",
         ) from e
 
+
 # === Basic Auth ===
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -105,14 +106,15 @@ async def get_current_user(token: Annotated[Optional[str], Depends(oauth2_scheme
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Extract username, organization, permissions from JWT
         username = payload.get("sub")
-        
-        # Extract permissions
+        organization_id: int | None = payload.get("organization_id")
         permissions: List[str] = payload.get("permissions", [])
 
         if username is None:
             raise credentials_exception
-        token_data = schemas.TokenData(username=username, permissions=permissions)
+        token_data = schemas.TokenData(username=username, permissions=permissions, organization_id=organization_id)
 
     except InvalidTokenError:
         raise credentials_exception
@@ -124,8 +126,9 @@ async def get_current_user(token: Annotated[Optional[str], Depends(oauth2_scheme
     if user is None:
         raise credentials_exception
     
-    # Attach permissions to user object
+    # Attach permissions and organization to user object
     user.permissions = permissions
+    user.organization_id = organization_id
     
     return user
 

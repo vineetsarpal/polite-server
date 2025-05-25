@@ -9,7 +9,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
-    role: str | None = None
+    organization_id: int | None = None
     permissions: List[str] = []
 
 # === Auth0 ===
@@ -21,6 +21,17 @@ class Auth0Payload(BaseModel):
     permissions: Optional[List[str]] = None
     # Add other common claims like 'aud', 'iss', 'exp', etc. if you want to use them
     
+# Organization Schemas ===
+class OrganizationBase(BaseModel):
+    name: str
+
+class OrganizationCreate(OrganizationBase):
+    pass
+
+class OrganizationPublic(OrganizationBase):
+    id: int
+    
+    model_config = ConfigDict(from_attributes=True)
 
 # === User Schemas ===
 class UserBase(BaseModel):
@@ -34,8 +45,10 @@ class UserCreate(UserBase):
 class UserPublic(UserBase):
     id: int
     is_active: bool | None = True
+    organization_id: str | None = None
     created_at: datetime 
     updated_at: datetime
+    
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -31,10 +31,16 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
             permissions.add(permission.name)
     user_permissions = list(permissions)
 
+    # Add organization id to token
+    organization_id = None
+    if user.organization:
+        organization_id = user.organization_id
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     tokenData = {
         "sub": user.username,
         "permissions": user_permissions,
+        "organization_id": organization_id
     }
     access_token = security.create_access_token(data=tokenData, expires_delta=access_token_expires)
     return schemas.Token(access_token=access_token, token_type="bearer")
