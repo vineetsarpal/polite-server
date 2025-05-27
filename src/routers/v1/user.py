@@ -11,8 +11,8 @@ v1_router = APIRouter(
 
 # Get All Users
 @v1_router.get("/")
-async def get_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    users = db.query(models.User).offset(skip).limit(limit).all()
+async def get_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user: schemas.CurrentUser = Depends(security.get_current_active_user)):
+    users = db.query(models.User).filter(models.User.organization_id == current_user.organization_id).offset(skip).limit(limit).all()
     return users
 
 # Create User

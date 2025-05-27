@@ -27,10 +27,13 @@ role_permissions = Table(
 
 class Organization(Base):
     __tablename__ = "organizations"
-    id = Column(Integer, primary_key=True, index=True)
+
+    id = Column(String, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
 
     users = relationship("User", back_populates="organization")
+    policies = relationship("Policy", back_populates="organization")
+    contacts = relationship("Contact", back_populates="organization")
 
 
 class User(Base):
@@ -44,7 +47,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
 
     organization = relationship("Organization", back_populates="users")
     roles = relationship("Role", secondary=user_roles, back_populates="users")
@@ -85,7 +88,10 @@ class Contact(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
-    updated_by = Column(String)
+    # updated_by = Column(String)
+
+    organization_id = Column(String, ForeignKey("organizations.id"), index=True, nullable=False)
+    organization = relationship("Organization", back_populates="contacts")
 
 
 class Policy(Base):
@@ -108,9 +114,10 @@ class Policy(Base):
     start_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=False)
 
-    policyholder_id = Column(Integer, ForeignKey("contacts.id"))
-    
-
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'), onupdate=text('now()'))
+    
+    policyholder_id = Column(Integer, ForeignKey("contacts.id"))
+    organization_id = Column(String, ForeignKey("organizations.id"), index=True, nullable=False)
+    organization = relationship("Organization", back_populates="policies")
     

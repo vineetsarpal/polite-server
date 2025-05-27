@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from datetime import datetime, date, timezone
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(project_root))
@@ -28,6 +29,24 @@ def seed_data():
     db: Session = next(get_db())
     print("Seeding database...")
     try:
+        # --- Create Organizations ---
+        org1_id = "org_polite"
+        org2_id = "org_guest"
+
+        org1 = db.query(models.Organization).filter(models.Organization.id == org1_id).first()
+        if not org1:
+            org1 = models.Organization(id=org1_id, name="Polite")
+            db.add(org1)
+            db.commit()
+            db.refresh(org1)
+        
+        org2 = db.query(models.Organization).filter(models.Organization.id == org2_id).first()
+        if not org2:
+            org2 = models.Organization(id=org2_id, name="Guest")
+            db.add(org2)
+            db.commit()
+            db.refresh(org2)
+
         # --- Create Users ---
         admin_password_hash = utils.hash_password("admin")
         admin_user = db.query(models.User).filter(models.User.username == "admin").first()
@@ -36,7 +55,8 @@ def seed_data():
                 username="admin",
                 password=admin_password_hash,
                 email="admin@example.com",
-                full_name="Administrator"
+                full_name="Administrator",
+                organization_id=org1_id
             )
             db.add(admin_user)
             db.commit()
@@ -51,7 +71,8 @@ def seed_data():
                 username="guest",
                 password=guest_password_hash,
                 email="guest@example.com",
-                full_name="Guest"
+                full_name="Guest",
+                organization_id=org2_id
             )
             db.add(guest_user)
             db.commit()
@@ -72,7 +93,7 @@ def seed_data():
 
         guest_role = db.query(models.Role).filter(models.Role.name == "guest").first()
         if not guest_role:
-            guest_role = models.Role(name="guest", description="Guest role")
+            guest_role = models.Role(name="guest", description="Guest")
             db.add(guest_role)
             db.commit()
             db.refresh(guest_role)
@@ -120,7 +141,33 @@ def seed_data():
             guest_user.roles.append(guest_role)
         else:
             print(f"'{guest_user.name}' role already assigned to '{guest_user.username}' or user/role missing.")
-        db.commit() 
+        db.commit()
+
+        # --- Create Contacts ---
+        contact1 = models.Contact(type="Individual", first_name="Foo", last_name="Bar", email="foobar@example.com", dob="1970-01-01", organization_id=org1_id)
+        contact2 = models.Contact(type="Individual", first_name="John", last_name="Doe", email="johndoe@example.com", dob="1980-01-01", organization_id=org2_id)
+        db.add_all([contact1, contact2])
+        db.commit()
+        db.refresh(contact1)
+        db.refresh(contact2)
+        print(f"Created contacts")
+
+        # --- Create Policies ---
+        policy1 = models.Policy(lob="auto", status="active", base_premium=100, net_premium=750, tax=10, sum_insured=1000000, license_plate="LP1 1VL", vin="123456789", 
+                                start_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc), 
+                                end_date=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc), 
+                                policyholder_id=contact1.id,
+                                organization_id=org1_id)
+        policy2 = models.Policy(lob="auto", status="active", base_premium=50, net_premium=500, tax=5, sum_insured=500000, license_plate="LP2 2VL", vin="987654321", 
+                        start_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+                        end_date=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc), 
+                        policyholder_id=contact2.id,
+                        organization_id=org2_id)
+        db.add_all([policy1, policy2])
+        db.commit()
+        db.refresh(policy1)
+        db.refresh(policy2)
+        print(f"Created policies")
 
         print("\nDatabase seeding complete!")
 

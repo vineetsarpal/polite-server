@@ -9,7 +9,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
-    organization_id: int | None = None
+    organization_id: str | None = None
     permissions: List[str] = []
 
 # === Auth0 ===
@@ -45,7 +45,7 @@ class UserCreate(UserBase):
 class UserPublic(UserBase):
     id: int
     is_active: bool | None = True
-    organization_id: str | None = None
+
     created_at: datetime 
     updated_at: datetime
     
@@ -54,6 +54,7 @@ class UserPublic(UserBase):
 
 class CurrentUser(UserPublic):
     permissions: List[str] = []
+    organization_id: str | None = None
 
 
 # === Permission Schemas ===
@@ -110,7 +111,10 @@ class ContactCreate(ContactBase):
 
 class ContactPublic(ContactBase):
     id: int
+    organization_id: str | None = None
     is_active: bool | None = True
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # === Policy Schemas ===
@@ -139,5 +143,6 @@ class PolicyCreate(PolicyBase):
 
 class PolicyPublic(PolicyBase):
     id: int
-
+    organization_id: str
+    
     model_config = ConfigDict(from_attributes=True)
