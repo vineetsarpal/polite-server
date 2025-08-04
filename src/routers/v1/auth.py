@@ -67,4 +67,4 @@ async def read_users_me(current_user: Annotated[schemas.UserPublic, Depends(secu
 #     access_token = security.create_access_token(data={"user_id": user.id})
 
 #     # Return a Token
-#     return {"access_token": access_token, "token_type": "bearer"}
+#     return {"access_token": access_token, "token_type": "bearer"}`

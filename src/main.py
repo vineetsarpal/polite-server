@@ -9,10 +9,14 @@ import os
 from src import config, security
 from fastapi.responses import FileResponse
 # from fastapi_auth0 import Auth0, Auth0User
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI()
 
 API_BASE_PREFIX = "/api"
+
+# Prometheus - Expose metrics at /metrics
+Instrumentator().instrument(app).expose(app)
 
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
@@ -51,7 +55,6 @@ app.include_router(policy.v1_router, prefix=API_BASE_PREFIX)
 # @app.get("/api/private-auth0", dependencies=[Depends(security.auth0.implicit_scheme)])
 # def private(user = Depends(security.get_current_user_auth0)):
 #     return {"user": user}
-
 
 @app.get("/")
 async def root():

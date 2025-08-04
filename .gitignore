@@ -175,3 +175,7 @@ cython_debug/
 
 # Mac
 .DS_Store
+
+# Monitoring config secrets
+config/secrets/secret.*
+!config/secrets/secret.*.example.*
