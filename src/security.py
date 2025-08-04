@@ -6,18 +6,17 @@ from fastapi import Depends, status, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jwt.exceptions import InvalidTokenError
-from datetime import datetime, timedelta, timezone
-from fastapi_auth0 import Auth0
+# from fastapi_auth0 import Auth0
 from jose import jwt, JWTError
 import os
 import httpx
 
 # === Auth0 ===
-auth0 = Auth0(
-    domain=config.AUTH0_DOMAIN,
-    api_audience=config.AUTH0_AUDIENCE,
-    scopes={'read:messages': ''}
-)
+# auth0 = Auth0(
+#     domain=config.AUTH0_DOMAIN,
+#     api_audience=config.AUTH0_AUDIENCE,
+#     scopes={'read:messages': ''}
+# )
 
 bearer_scheme = HTTPBearer()
 
